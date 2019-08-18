@@ -1,0 +1,2 @@
+# EpiThai
+Bot Discord : EpiThaï
