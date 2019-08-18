@@ -1,7 +1,7 @@
 # Work with Python 3.6
 import discord
 
-TOKEN = 'NjExNTk5NjQxNzI0NTgzOTU2.XViplQ.SP4qp4fTgzvVuBdwlmyfoz-xSBk'
+TOKEN = 'NjExNTk5NjQxNzI0NTgzOTU2.XViqXw.kEVCDI_9If9K75_DibtVbedmNw8'
 
 EQ = {'Uni_Mahidol':"Mahidol",'Uni_Kingmongkut':"KMUTT",'Uni_Chula':"Chulalongkorn"}
 
