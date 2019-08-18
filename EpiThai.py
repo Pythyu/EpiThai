@@ -1,7 +1,7 @@
 # Work with Python 3.6
 import discord
 
-TOKEN = 'NjExNTk5NjQxNzI0NTgzOTU2.XVWQUA.k1TABQY6C-3ZyBCzpO35yPaB9_U'
+TOKEN = 'NjExNTk5NjQxNzI0NTgzOTU2.XVinlw.5LTcYwPwLI2biZHDGxkjNzbGUsY'
 
 EQ = {'Uni_Mahidol':"Mahidol",'Uni_Kingmongkut':"KMUTT",'Uni_Chula':"Chulalongkorn"}
 
@@ -23,6 +23,11 @@ async def on_message(message):
         await client.send_message(message.channel, msg)
     elif message.channel.name == "inscriptions":
         await message.delete()
+
+@client.event
+async def on_member_join(member):
+    role = discord.utils.get(member.guild.roles, name="En attente d'inscription")
+    await member.add_roles(role)
 
 
 
