@@ -69,7 +69,7 @@ async def on_reaction_add(reaction, user):
                 role = discord.utils.get(reaction.message.guild.roles, name=univ)
                 Log.write(format_time()+" >>> User "+str(user.name)+" choosed university "+univ+" \n")
                 await user.add_roles(role)
-                if(user_is_ready_to_access_discord(user))
+                if user_is_ready_to_access_discord(user):
                     user.remove_roles(discord.utils.get(reaction.message.guild.roles, name=waitingSubscriptionRole))
             except Exception as e:  # if it crash for some reason
                 if DEBUG_MODE:
