@@ -1,10 +1,7 @@
 # Work with Python 3.6
 import discord
-<<<<<<< HEAD
 import datetime
-=======
 import os
->>>>>>> 41e4e23a5286e04f49a28f5473d390078910a310
 
 # TOKEN = 'SECRET'
 TOKEN = os.getenv('DISCORD_TOKEN', "SECRET")
