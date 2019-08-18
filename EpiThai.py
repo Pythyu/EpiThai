@@ -1,6 +1,8 @@
 # Work with Python 3.6
 import discord
 import datetime
+import time
+usleep = lambda x: time.sleep(x/1000000.0)
 import os
 
 # TOKEN = 'SECRET'
@@ -61,21 +63,27 @@ def rolesListToSTRList(list, sep):
         s += sep + list[i].name
     return s
 
-def userHasAlreadyChoosenUniv(user, role=None):
+def userHasAlreadyChoosenUniv(user, role=None, result={}):
     alreadyChoosen = False
     for em, role_name in EQ.items():
         if discord.utils.get(user.roles, name=role_name) and (not role or role != role_name):
             alreadyChoosen = True
+            result["univ"] = role_name
             break
     return alreadyChoosen
 
-def userHasAlreadyChoosenPromo(user, role=None):
+def userHasAlreadyChoosenPromo(user, role=None, result={}):
     alreadyChoosen = False
     for em, role_name in promo_emojis.items():
         if discord.utils.get(user.roles, name=role_name) and (not role or role != role_name):
             alreadyChoosen = True
+            result["promo"] = role_name
             break
     return alreadyChoosen
+
+async def sendDM(user, msg):
+    chn = user.dm_channel if user.dm_channel else await user.create_dm()
+    await chn.send(msg)
 
 @client.event
 async def on_message(message):
@@ -125,7 +133,9 @@ async def on_reaction_add(reaction, user):
             if em in EQ: # Univ emoji
                 univ = EQ[em]
 
-                if(userHasAlreadyChoosenUniv(user, univ)):
+                result = {}
+                if(userHasAlreadyChoosenUniv(user, univ, result)):
+                    await sendDM(user, "======== EPITA - Thaïlande ========\nVous ne pouvez pas choisir plus d'une université ! Vous avez déjà choisi l'université suivante :```" + result["univ"] + "```\nPour modifier votre choix, contactez un administrateur.")
                     return await reaction.message.remove_reaction(reaction, user)
 
                 role = discord.utils.get(reaction.message.guild.roles, name=univ)
@@ -133,7 +143,9 @@ async def on_reaction_add(reaction, user):
             elif em in promo_emojis:
                 promo = promo_emojis[em]
 
-                if(userHasAlreadyChoosenPromo(user, promo)):
+                result = {}
+                if(userHasAlreadyChoosenPromo(user, promo, result)):
+                    await sendDM(user, "======== EPITA - Thaïlande ========\nVous ne pouvez pas vous attribuer plusieurs promotions ! Vous avez déjà choisi la promotion suivante :```" + result["promo"] + "```\nPour modifier votre choix, contactez un administrateur.")
                     return await reaction.message.remove_reaction(reaction, user)
 
                 role = discord.utils.get(reaction.message.guild.roles, name=promo)
@@ -142,6 +154,7 @@ async def on_reaction_add(reaction, user):
                 return await reaction.message.remove_reaction(reaction, user)
 
             await user.add_roles(role)
+            usleep(50)
 
             if user_is_ready_to_access_discord(user):
                 await user.remove_roles(discord.utils.get(reaction.message.guild.roles, name=waitingSubscriptionRole))
