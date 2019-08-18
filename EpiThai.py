@@ -1,17 +1,26 @@
 # Work with Python 3.6
 import discord
+import datetime
 
 TOKEN = 'SECRET'
 
 EQ = {'Uni_Mahidol':"Mahidol",'Uni_Kingmongkut':"KMUTT",'Uni_Chula':"Chulalongkorn"}
 
 DEBUG_MODE = False #Ajout d'un debug mode
+Log = open("log.txt","a") #Log file
+
+
 
 client = discord.Client()
 initialMessage = None;
 
 def absolute(m):
     return True
+
+def format_time():
+    t = datetime.datetime.now()
+    s = t.strftime('%Y-%m-%d %H:%M:%S.%f')
+    return s[:-7]
 
 @client.event
 async def on_message(message):
@@ -22,12 +31,15 @@ async def on_message(message):
     if message.content.startswith('||ping_bot'):
         msg = 'Pong ! {0.author.mention}'.format(message)
         await client.send_message(message.channel, msg)
+    elif message.content.startswith('||bot_shutdown'):
+        await client.logout()
     elif message.channel.name == "inscriptions":
         await message.delete()
 
 @client.event
 async def on_member_join(member):
     role = discord.utils.get(member.guild.roles, name="En attente d'inscription")
+    Log.write(format_time()+" >>> User "+str(member.nick)+" join the server, he gain the role : En attente d'inscription\n")
     await member.add_roles(role)
 
 
@@ -43,28 +55,36 @@ async def on_reaction_add(reaction, user):
         em = reaction.emoji.name.encode('utf-8') #can crash for non-custom emoji c'est la raison du try except
         if val  == "inscriptions":
             try:
-                role = discord.utils.get(reaction.message.guild.roles, name=EQ[em.decode('utf-8')])
+                univ = EQ[em.decode('utf-8')]
+                role = discord.utils.get(reaction.message.guild.roles, name=univ)
+                Log.write(format_time()+" >>> User "+str(user.name)+" choosed university "+univ+" \n")
                 await user.add_roles(role)
             except Exception as e:  # if it crash for some reason
                 if DEBUG_MODE:
-                    print(e)
+                    Log.write(format_time()+" >>> [ERROR] EXCEPTION into inscriptions channel : "+str(e)+"\n")
                 else:
                     pass
     except Exception as e:
         if DEBUG_MODE:
-            print(e)
+            Log.write(format_time()+" >>> [ERROR] EXCEPTION : "+str(e)+"\n")
         else:
             pass
+
+@client.event
+async def on_disconnect():
+    Log.write("=========== Shuting down ... ===========\n")
+    Log.close()
     
 
 @client.event
 async def on_ready():
+    Log.write("=========== Starting ... ===========\n")
     print('Logged in as')
     # print(client.user)
     print(client.user.name.encode('utf-8'))
     print(client.user.id)
     print('------')
-
+    Log.write(format_time()+" >>> STARTED !")
 
     channel = discord.utils.get(client.get_all_channels(), name='inscriptions')
     deleted = await channel.purge(limit=1000, check=absolute)
