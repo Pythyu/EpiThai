@@ -7,6 +7,7 @@ import os
 TOKEN = os.getenv('DISCORD_TOKEN', "SECRET")
 
 EQ = {'Uni_Mahidol':"Mahidol",'Uni_Kingmongkut':"KMUTT",'Uni_Chula':"Chulalongkorn"}
+promo_emojis = {"2022": "2022", "2023": "2023", "2024": "2024"}
 waitingSubscriptionRole = "En attente d'inscription"
 adminIDs = {"248459095512842241": "Antoine", "328484154444480513": "Charles", "368792646350667789": "Tao"}
 
@@ -20,7 +21,7 @@ class Logs:
     def close(self):
         return 0
 
-DEBUG_MODE = False #Ajout d'un debug mode
+DEBUG_MODE = True #Ajout d'un debug mode
 # Log = open("log.txt","a") #Log file
 Log = Logs()
 
@@ -35,6 +36,47 @@ def format_time():
     s = t.strftime('%Y-%m-%d %H:%M:%S.%f')
     return s[:-7]
 
+def user_is_ready_to_access_discord(user):
+    # choosen = {"univ": False, "promo": False}
+    # for e, role in EQ.items():
+    #     if(discord.utils.get(user.roles, name=role)):
+    #         choosen["univ"] = True
+    #         break
+    # for e, role in promo_emojis.items():
+    #     if(discord.utils.get(user.roles, name=role)):
+    #         choosen["promo"] = True
+    #         break
+    # return choosen["univ"] and choosen["promo"]
+    return userHasAlreadyChoosenUniv(user) and userHasAlreadyChoosenPromo(user)
+
+def user_is_admin(user):
+    return str(user.id) in adminIDs
+
+def rolesListToSTRList(list, sep):
+    s = ""
+    if(len(list) < 1):
+        return []
+    s = list[0].name
+    for i in range(1, len(list)):
+        s += sep + list[i].name
+    return s
+
+def userHasAlreadyChoosenUniv(user, role=None):
+    alreadyChoosen = False
+    for em, role_name in EQ.items():
+        if discord.utils.get(user.roles, name=role_name) and (not role or role != role_name):
+            alreadyChoosen = True
+            break
+    return alreadyChoosen
+
+def userHasAlreadyChoosenPromo(user, role=None):
+    alreadyChoosen = False
+    for em, role_name in promo_emojis.items():
+        if discord.utils.get(user.roles, name=role_name) and (not role or role != role_name):
+            alreadyChoosen = True
+            break
+    return alreadyChoosen
+
 @client.event
 async def on_message(message):
     # we do not want the bot to reply to itself
@@ -45,6 +87,9 @@ async def on_message(message):
         msg = 'Pong ! {0.author.mention}'.format(message)
         return await message.channel.send(msg)
     elif message.content.startswith('||bot_shutdown') or message.content.startswith("/") and user_is_admin(message.author):
+        channel = discord.utils.get(client.get_all_channels(), name='inscriptions')
+        await channel.purge(limit=1000, check=absolute)
+        await message.channel.send("Shutting down...")
         return await client.logout()
     elif message.content.startswith("!clean_user_roles") and user_is_admin(message.author):
         if len(message.mentions) == 0:
@@ -66,21 +111,6 @@ async def on_member_join(member):
     Log.write(format_time()+" >>> User "+str(member.nick)+" join the server, he gain the role : En attente d'inscription\n")
     await member.add_roles(role)
 
-def user_is_ready_to_access_discord(user):
-    return True
-
-def user_is_admin(user):
-    return str(user.id) in adminIDs
-
-def rolesListToSTRList(list, sep):
-    s = ""
-    if(len(list) < 1):
-        return []
-    s = list[0].name
-    for i in range(1, len(list)):
-        s += sep + list[i].name
-    return s
-
 
 @client.event
 async def on_reaction_add(reaction, user):
@@ -90,20 +120,46 @@ async def on_reaction_add(reaction, user):
     
     try:
         val = reaction.message.channel.name
-        em = reaction.emoji.name.encode('utf-8') #can crash for non-custom emoji c'est la raison du try except
+        em = reaction.emoji if type(reaction.emoji) is str else reaction.emoji.name.encode('utf-8').decode('utf-8') #can crash for non-custom emoji c'est la raison du try except
         if val  == "inscriptions":
-            try:
-                univ = EQ[em.decode('utf-8')]
+            if em in EQ: # Univ emoji
+                univ = EQ[em]
+
+                if(userHasAlreadyChoosenUniv(user, univ)):
+                    return await reaction.message.remove_reaction(reaction, user)
+
                 role = discord.utils.get(reaction.message.guild.roles, name=univ)
                 Log.write(format_time()+" >>> User "+str(user.name)+" choosed university "+univ+" \n")
-                await user.add_roles(role)
-                if user_is_ready_to_access_discord(user):
-                    await user.remove_roles(discord.utils.get(reaction.message.guild.roles, name=waitingSubscriptionRole))
+            elif em in promo_emojis:
+                promo = promo_emojis[em]
+
+                if(userHasAlreadyChoosenPromo(user, promo)):
+                    return await reaction.message.remove_reaction(reaction, user)
+
+                role = discord.utils.get(reaction.message.guild.roles, name=promo)
+                Log.write(format_time()+" >>> User "+str(user.name)+" choosed promo "+promo+" \n")
+            else:
+                return await reaction.message.remove_reaction(reaction, user)
+
+            await user.add_roles(role)
+
+            if user_is_ready_to_access_discord(user):
+                await user.remove_roles(discord.utils.get(reaction.message.guild.roles, name=waitingSubscriptionRole))
+            """
+            try:
+                # univ = EQ[em.decode('utf-8')]
+                # role = discord.utils.get(reaction.message.guild.roles, name=univ)
+                # Log.write(format_time()+" >>> User "+str(user.name)+" choosed university "+univ+" \n")
+                # await user.add_roles(role)
+
+                # if user_is_ready_to_access_discord(user):
+                    # await user.remove_roles(discord.utils.get(reaction.message.guild.roles, name=waitingSubscriptionRole))
             except Exception as e:  # if it crash for some reason
                 if DEBUG_MODE:
                     Log.write(format_time()+" >>> [ERROR] EXCEPTION into inscriptions channel : "+str(e)+"\n")
                 else:
                     pass
+            """
     except Exception as e:
         if DEBUG_MODE:
             Log.write(format_time()+" >>> [ERROR] EXCEPTION : "+str(e)+"\n")
@@ -124,7 +180,7 @@ async def on_ready():
     print(client.user.name.encode('utf-8'))
     print(client.user.id)
     print('------')
-    Log.write(format_time() + " >>> STARTED !")
+    Log.write(format_time() + " >>> STARTED !\n")
 
     channel = discord.utils.get(client.get_all_channels(), name='inscriptions')
     deleted = await channel.purge(limit=1000, check=absolute)
@@ -132,9 +188,18 @@ async def on_ready():
     msg = """Choisir son Université >=\n"""
     for em_name, em_dp_name in EQ.items():
         msg += "\n   <:" + em_name + ":" + str(discord.utils.get(client.emojis, name=em_name).id) + ">   => " + em_dp_name + "\n"
+
+    msg += "\n\nChoisir sa promotion >=\n"
+    for em_name, em_dp_name in promo_emojis.items():
+        msg += "\n   <:" + em_name + ":" + str(discord.utils.get(client.emojis, name=em_name).id) + ">   => " + em_dp_name + "\n"
+    
     initialMessage = await channel.send(msg)
 
     for emoji_name in EQ:
+        emoji = discord.utils.get(client.emojis, name=emoji_name)
+        await initialMessage.add_reaction(emoji)
+
+    for emoji_name in promo_emojis:
         emoji = discord.utils.get(client.emojis, name=emoji_name)
         await initialMessage.add_reaction(emoji)
 
