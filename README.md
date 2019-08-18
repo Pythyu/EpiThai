@@ -7,7 +7,7 @@ Pré-requis :
 
 
 Installation & Execution: 
-1 - clone le répertoire
-2 - Executer EpiThai.py
+- clone le répertoire
+- Executer EpiThai.py
 
 
