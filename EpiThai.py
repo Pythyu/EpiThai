@@ -8,6 +8,7 @@ TOKEN = os.getenv('DISCORD_TOKEN', "SECRET")
 
 EQ = {'Uni_Mahidol':"Mahidol",'Uni_Kingmongkut':"KMUTT",'Uni_Chula':"Chulalongkorn"}
 waitingSubscriptionRole = "En attente d'inscription"
+adminIDs = {"248459095512842241": "Antoine", "328484154444480513": "Charles", "368792646350667789": "Tao"}
 
 class Logs:
     def __init__(self, file=None):
@@ -15,6 +16,9 @@ class Logs:
        
     def write(self, s):
         print(s, end="")
+
+    def close(self):
+        return 0
 
 DEBUG_MODE = False #Ajout d'un debug mode
 # Log = open("log.txt","a") #Log file
@@ -37,13 +41,24 @@ async def on_message(message):
     if message.author == client.user:
         return
 
-    if message.content.startswith('||ping_bot'):
+    if message.content.startswith('||ping_bot') and user_is_admin(message.author):
         msg = 'Pong ! {0.author.mention}'.format(message)
-        await client.send_message(message.channel, msg)
-    elif message.content.startswith('||bot_shutdown'):
-        await client.logout()
+        return await message.channel.send(msg)
+    elif message.content.startswith('||bot_shutdown') or message.content.startswith("/") and user_is_admin(message.author):
+        return await client.logout()
+    elif message.content.startswith("!clean_user_roles") and user_is_admin(message.author):
+        if len(message.mentions) == 0:
+            return
+        for mention in message.mentions:
+            roles = mention.roles
+            # dpName = mention.display_name
+            msg = mention.mention + " avait pour rôles ```" + rolesListToSTRList(roles, ", ") + "```Ils ont tous été supprimés."
+            roles = [discord.utils.get(mention.guild.roles, name=waitingSubscriptionRole)]
+            await mention.edit(roles=roles, reason="Command for auto-deleting all roles")
+            return await message.channel.send(msg)
     elif message.channel.name == "inscriptions":
-        await message.delete()
+        return await message.delete()
+
 
 @client.event
 async def on_member_join(member):
@@ -53,6 +68,19 @@ async def on_member_join(member):
 
 def user_is_ready_to_access_discord(user):
     return True
+
+def user_is_admin(user):
+    return str(user.id) in adminIDs
+
+def rolesListToSTRList(list, sep):
+    s = ""
+    if(len(list) < 1):
+        return []
+    s = list[0].name
+    for i in range(1, len(list)):
+        s += sep + list[i].name
+    return s
+
 
 @client.event
 async def on_reaction_add(reaction, user):
@@ -70,7 +98,7 @@ async def on_reaction_add(reaction, user):
                 Log.write(format_time()+" >>> User "+str(user.name)+" choosed university "+univ+" \n")
                 await user.add_roles(role)
                 if user_is_ready_to_access_discord(user):
-                    user.remove_roles(discord.utils.get(reaction.message.guild.roles, name=waitingSubscriptionRole))
+                    await user.remove_roles(discord.utils.get(reaction.message.guild.roles, name=waitingSubscriptionRole))
             except Exception as e:  # if it crash for some reason
                 if DEBUG_MODE:
                     Log.write(format_time()+" >>> [ERROR] EXCEPTION into inscriptions channel : "+str(e)+"\n")
@@ -96,7 +124,7 @@ async def on_ready():
     print(client.user.name.encode('utf-8'))
     print(client.user.id)
     print('------')
-    Log.write(format_time()+" >>> STARTED !")
+    Log.write(format_time() + " >>> STARTED !")
 
     channel = discord.utils.get(client.get_all_channels(), name='inscriptions')
     deleted = await channel.purge(limit=1000, check=absolute)
