@@ -7,13 +7,14 @@ import os
 TOKEN = os.getenv('DISCORD_TOKEN', "SECRET")
 
 EQ = {'Uni_Mahidol':"Mahidol",'Uni_Kingmongkut':"KMUTT",'Uni_Chula':"Chulalongkorn"}
+waitingSubscriptionRole = "En attente d'inscription"
 
 class Logs:
     def __init__(self, file=None):
         self.file = file
        
     def write(self, s):
-        print(s)
+        print(s, end="")
 
 DEBUG_MODE = False #Ajout d'un debug mode
 # Log = open("log.txt","a") #Log file
@@ -46,11 +47,12 @@ async def on_message(message):
 
 @client.event
 async def on_member_join(member):
-    role = discord.utils.get(member.guild.roles, name="En attente d'inscription")
+    role = discord.utils.get(member.guild.roles, name=waitingSubscriptionRole)
     Log.write(format_time()+" >>> User "+str(member.nick)+" join the server, he gain the role : En attente d'inscription\n")
     await member.add_roles(role)
 
-
+def user_is_ready_to_access_discord(user):
+    return True
 
 @client.event
 async def on_reaction_add(reaction, user):
@@ -67,6 +69,8 @@ async def on_reaction_add(reaction, user):
                 role = discord.utils.get(reaction.message.guild.roles, name=univ)
                 Log.write(format_time()+" >>> User "+str(user.name)+" choosed university "+univ+" \n")
                 await user.add_roles(role)
+                if(user_is_ready_to_access_discord(user))
+                    user.remove_roles(discord.utils.get(reaction.message.guild.roles, name=waitingSubscriptionRole))
             except Exception as e:  # if it crash for some reason
                 if DEBUG_MODE:
                     Log.write(format_time()+" >>> [ERROR] EXCEPTION into inscriptions channel : "+str(e)+"\n")
