@@ -1,13 +1,14 @@
 # Work with Python 3.6
 import discord
 
-TOKEN = 'NjExNTk5NjQxNzI0NTgzOTU2.XVirFg.pg_YBCLglP8Qx0eu3Y8_47FPeVs'
+TOKEN = 'SECRET'
 
 EQ = {'Uni_Mahidol':"Mahidol",'Uni_Kingmongkut':"KMUTT",'Uni_Chula':"Chulalongkorn"}
 
 DEBUG_MODE = False #Ajout d'un debug mode
 
 client = discord.Client()
+initialMessage = None;
 
 def absolute(m):
     return True
@@ -33,6 +34,9 @@ async def on_member_join(member):
 
 @client.event
 async def on_reaction_add(reaction, user):
+
+    if user == client.user: #On ne veux pas que le bot réagisse à ses propres réactions
+        return
     
     try:
         val = reaction.message.channel.name
@@ -56,19 +60,22 @@ async def on_reaction_add(reaction, user):
 @client.event
 async def on_ready():
     print('Logged in as')
-    print(client.user.name)
+    # print(client.user)
+    print(client.user.name.encode('utf-8'))
     print(client.user.id)
     print('------')
-    
-    
-    
+
+
     channel = discord.utils.get(client.get_all_channels(), name='inscriptions')
     deleted = await channel.purge(limit=1000, check=absolute)
     # Pour l'instant message écris en dur, dès que j'ai un peu de temps j'applique l'idée de Charle || /!\ Ne pas supprimer la valeur en string des emoji, chiante à retrouver ||
-    msg = """Choisir son Université =>\n
-        <:Uni_Mahidol:611611594199400468>   => Mahidol\n
-        <:Uni_Kingmongkut:611611513404522507>  => KMUTT\n
-        <:Uni_Chula:611611315345293312>  => Chulalongkorn"""
-    await channel.send(msg)
+    msg = """Choisir son Université >=\n"""
+    for em_name, em_dp_name in EQ.items():
+        msg += "\n   <:" + em_name + ":" + str(discord.utils.get(client.emojis, name=em_name).id) + ">   => " + em_dp_name + "\n"
+    initialMessage = await channel.send(msg)
+
+    for emoji_name in EQ:
+        emoji = discord.utils.get(client.emojis, name=emoji_name)
+        await initialMessage.add_reaction(emoji)
 
 client.run(TOKEN)
