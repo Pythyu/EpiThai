@@ -1,7 +1,9 @@
 # Work with Python 3.6
 import discord
+import os
 
-TOKEN = 'SECRET'
+# TOKEN = 'SECRET'
+TOKEN = os.getenv('DISCORD_TOKEN', "SECRET")
 
 EQ = {'Uni_Mahidol':"Mahidol",'Uni_Kingmongkut':"KMUTT",'Uni_Chula':"Chulalongkorn"}
 
