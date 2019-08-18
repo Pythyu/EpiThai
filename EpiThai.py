@@ -8,10 +8,16 @@ TOKEN = os.getenv('DISCORD_TOKEN', "SECRET")
 
 EQ = {'Uni_Mahidol':"Mahidol",'Uni_Kingmongkut':"KMUTT",'Uni_Chula':"Chulalongkorn"}
 
+class Logs:
+    def __init__(self, file=None):
+        self.file = file
+       
+    def write(self, s):
+        print(s)
+
 DEBUG_MODE = False #Ajout d'un debug mode
-Log = open("log.txt","a") #Log file
-
-
+# Log = open("log.txt","a") #Log file
+Log = Logs()
 
 client = discord.Client()
 initialMessage = None;
