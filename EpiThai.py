@@ -3,9 +3,9 @@ import discord
 
 TOKEN = 'NjExNTk5NjQxNzI0NTgzOTU2.XVWQUA.k1TABQY6C-3ZyBCzpO35yPaB9_U'
 
-
-
 EQ = {'Uni_Mahidol':"Mahidol",'Uni_Kingmongkut':"KMUTT",'Uni_Chula':"Chulalongkorn"}
+
+DEBUG_MODE = False #Ajout d'un debug mode
 
 client = discord.Client()
 
@@ -37,9 +37,15 @@ async def on_reaction_add(reaction, user):
                 role = discord.utils.get(reaction.message.guild.roles, name=EQ[em.decode('utf-8')])
                 await user.add_roles(role)
             except Exception as e:  # if it crash for some reason
-                print(e)
+                if DEBUG_MODE:
+                    print(e)
+                else:
+                    pass
     except Exception as e:
-        print(e)
+        if DEBUG_MODE:
+            print(e)
+        else:
+            pass
     
 
 @client.event
