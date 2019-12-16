@@ -5,6 +5,8 @@ import time
 usleep = lambda x: time.sleep(x/1000000.0)
 import os
 
+# Update discord.py : py -3 -m pip install -U discord.py
+
 # TOKEN = 'SECRET'
 TOKEN = os.getenv('DISCORD_TOKEN', "SECRET")
 
@@ -97,7 +99,8 @@ async def on_message(message):
     elif message.content.startswith('||bot_shutdown') or message.content.startswith("/") and user_is_admin(message.author):
         channel = discord.utils.get(client.get_all_channels(), name='inscriptions')
         await channel.purge(limit=1000, check=absolute)
-        await message.channel.send("Shutting down...")
+        msg = 'As {0.author.mention} told me, I am shutting down...'.format(message)
+        await message.channel.send(msg)
         return await client.logout()
     elif message.content.startswith("!clean_user_roles") and user_is_admin(message.author):
         if len(message.mentions) == 0:
@@ -111,6 +114,11 @@ async def on_message(message):
             return await message.channel.send(msg)
     elif message.channel.name == "inscriptions":
         return await message.delete()
+
+    elif message.content.startswith("!"):
+        spl = message.content.split(" ")
+        cmd = spl[0][1:]
+        args = spl[1:]
 
 
 @client.event
@@ -127,6 +135,9 @@ async def on_reaction_add(reaction, user):
         return
     
     try:
+        if user_is_ready_to_access_discord(user):
+            return await reaction.message.remove_reaction(reaction, user)
+
         val = reaction.message.channel.name
         em = reaction.emoji if type(reaction.emoji) is str else reaction.emoji.name.encode('utf-8').decode('utf-8') #can crash for non-custom emoji c'est la raison du try except
         if val  == "inscriptions":
@@ -152,12 +163,21 @@ async def on_reaction_add(reaction, user):
                 Log.write(format_time()+" >>> User "+str(user.name)+" choosed promo "+promo+" \n")
             else:
                 return await reaction.message.remove_reaction(reaction, user)
+            # await reaction.message.remove_reaction(reaction, user)
 
             await user.add_roles(role)
+            await sendDM(user, "======== EPITA - Thaïlande ========\nVous avez reçu le rôle```" + role.name + "```")
             usleep(50)
 
             if user_is_ready_to_access_discord(user):
+                await sendDM(user, "======== EPITA - Thaïlande ========\n```Vous avez désormais accès à l'ensemble du serveur !```")
+                # Remove temp role
                 await user.remove_roles(discord.utils.get(reaction.message.guild.roles, name=waitingSubscriptionRole))
+                # Remove all reactions on initial post from this user
+                await reaction.message.remove_reaction(reaction, user)
+                for _reac in reaction.message.reactions:
+                    async for _user in _reac.users():
+                        if _user == user: await reaction.message.remove_reaction(_reac, _user)
             """
             try:
                 # univ = EQ[em.decode('utf-8')]
