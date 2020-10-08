@@ -1,0 +1,11 @@
+version: '2'
+services:
+  epithai:
+    build: .
+    container_name: epithai
+    restart: unless-stopped
+    command: python3 EpiThai.py
+    volumes:
+            - ./src:/app
+    environment:
+       NODE_ENV: production
