@@ -4,6 +4,8 @@ import datetime
 import time
 usleep = lambda x: time.sleep(x/1000000.0)
 import os
+from dotenv import load_dotenv
+load_dotenv()
 
 # Update discord.py : py -3 -m pip install -U discord.py
 
@@ -13,7 +15,20 @@ TOKEN = os.getenv('DISCORD_TOKEN', "SECRET")
 EQ = {'Uni_Mahidol':"Mahidol",'Uni_Kingmongkut':"KMUTT",'Uni_Chula':"Chulalongkorn"}
 promo_emojis = {"2022": "2022", "2023": "2023", "2024": "2024"}
 waitingSubscriptionRole = "En attente d'inscription"
-adminIDs = {"248459095512842241": "Antoine", "328484154444480513": "Charles", "368792646350667789": "Tao"}
+
+def getAdmins():
+    admins_dict = {}
+    env = os.getenv("ADMINS", "").split(",")
+
+    if len(env) % 2 == 1:
+        print("Invalid admins list. It must follow the format `DISCORD_USER_ID,NAME`")
+        exit(1)
+    for i in range(0, len(env), 2):
+        admins_dict[env[i]] = env[i + 1]
+
+    return admins_dict
+
+adminIDs = getAdmins()
 
 class Logs:
     def __init__(self, file=None):
